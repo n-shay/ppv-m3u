@@ -1,0 +1,6 @@
+@PPV.M3U.Api_HostAddress = http://localhost:5244
+
+GET {{PPV.M3U.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
