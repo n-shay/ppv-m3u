@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Digital5HP.Text.M3U" Version="1.0.0-pre-0024-01" />
+    <PackageReference Include="Digital5HP.Text.M3U" Version="1.0.0" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0" />
   </ItemGroup>
 
