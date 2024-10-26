@@ -59,6 +59,8 @@ jobs:
         with:
           context: .
           file: ./PPV.M3U.Api/Dockerfile
+          build-args: |
+              TARGETPLATFORM=${{ matrix.platform }}
           platforms: ${{ matrix.platform }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
