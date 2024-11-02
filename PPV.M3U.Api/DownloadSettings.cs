@@ -2,7 +2,7 @@
 
 public class DownloadSettings
 {
-    public int IntervalMinutes { get; set; } = 1440;
+    public string Cron { get; set; }
 
     public string Url { get; set; }
 }

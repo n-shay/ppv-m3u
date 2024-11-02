@@ -1,10 +1,13 @@
-using Microsoft.AspNetCore.Mvc;
-
 namespace PPV.M3U.Api;
+
+using Digital5HP.CronJobs;
+
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 public class Program
 {
-    public static void Main(string[] args)
+    public static async Task Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
 
@@ -16,18 +19,18 @@ public class Program
 
         builder.Services.AddHttpClient();
 
-        builder.Services.AddHostedService<PlaylistProcessor>();
+        builder.Services.AddCronJob<UpdatePlaylistJob>(serviceProvider => serviceProvider.GetRequiredService<IOptions<DownloadSettings>>().Value.Cron);
 
         var app = builder.Build();
+
+        // Before starting web app, retrieve and initialize playlist(s)
+
+        var job = app.Services.GetRequiredService<UpdatePlaylistJob>();
+        await job.RunAsync();
 
         // Configure the HTTP request pipeline.
 
         app.UseAuthorization();
-
-        var summaries = new[]
-        {
-            "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-        };
 
         app.MapGet("/playlist{num:int}.m3u", ([FromRoute]int num) =>
         {
@@ -41,6 +44,6 @@ public class Program
             return Results.Stream(fileStream, contentType: "text/plain", lastModified: lastModified, fileDownloadName: $"playlist{num}.m3u");
         });
 
-        app.Run();
+        await app.RunAsync();
     }
 }

@@ -1,43 +1,22 @@
-﻿namespace PPV.M3U.Api;
-
+﻿using Digital5HP.CronJobs;
 using Digital5HP.Text.M3U;
 using Microsoft.Extensions.Options;
 
-public class PlaylistProcessor(ILogger<PlaylistProcessor> logger, IOptions<DownloadSettings> downloadOptions, IOptions<OutputSettings> outputOptions, IHttpClientFactory httpClientFactory) : BackgroundService
+namespace PPV.M3U.Api;
+
+public class UpdatePlaylistJob(ILogger<UpdatePlaylistJob> logger, IOptions<DownloadSettings> downloadOptions, IOptions<OutputSettings> outputOptions, IHttpClientFactory httpClientFactory) : ICronJob
 {
-    private readonly ILogger<PlaylistProcessor> logger = logger;
+    private readonly ILogger<UpdatePlaylistJob> logger = logger;
     private readonly IHttpClientFactory httpClientFactory = httpClientFactory;
     private readonly DownloadSettings downloadSettings = downloadOptions.Value;
     private readonly OutputSettings outputSettings = outputOptions.Value;
     private int _executionCount;
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-    {
-        this.logger.LogInformation("Playlist Processor Service is running.");
-
-        // When the timer should have no due-time, then do the work once now.
-        await DoWorkAsync(stoppingToken);
-
-        using PeriodicTimer timer = new(TimeSpan.FromMinutes(downloadSettings.IntervalMinutes));
-
-        try
-        {
-            while (await timer.WaitForNextTickAsync(stoppingToken))
-            {
-                await DoWorkAsync(stoppingToken);
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            this.logger.LogInformation("Playlist Processor Service is stopping.");
-        }
-    }
-
-    private async Task DoWorkAsync(CancellationToken cancellationToken)
+    public async Task RunAsync(CancellationToken token = default)
     {
         int count = Interlocked.Increment(ref _executionCount);
 
-        this.logger.LogInformation("Playlist Processor Service is working. Count: {Count}", count);
+        this.logger.LogInformation("Playlist Update Job is working. Count: {Count}", count);
 
         try
         {
@@ -51,10 +30,10 @@ public class PlaylistProcessor(ILogger<PlaylistProcessor> logger, IOptions<Downl
             }
             else
             {
-                stream = await client.GetStreamAsync(this.downloadSettings.Url, cancellationToken);
+                stream = await client.GetStreamAsync(this.downloadSettings.Url, token);
             }
 
-            var originPlaylist = await Serializer.DeserializeAsync(stream, cancellationToken);
+            var originPlaylist = await Serializer.DeserializeAsync(stream, token);
 
             this.logger.LogInformation("Downloaded playlist with {Channels} channels from {DownloadPath}.", originPlaylist.Channels.Count, this.downloadSettings.Url);
 
@@ -88,16 +67,16 @@ public class PlaylistProcessor(ILogger<PlaylistProcessor> logger, IOptions<Downl
 
             await stream.DisposeAsync();
 
-            this.logger.LogInformation("Playlist Processor Service work completed. Count: {Count}", count);
+            this.logger.LogInformation("Playlist Update Job completed. Count: {Count}", count);
 
         }
         catch (OperationCanceledException)
         {
-            throw;
+            this.logger.LogWarning("Playlist Update Job canceled.");
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
-            this.logger.LogError(ex, "Playlist Processor Service failed to run.");
+            this.logger.LogError(ex, "Playlist Update Job failed to run.");
         }
     }
 }
