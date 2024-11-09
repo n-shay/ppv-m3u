@@ -17,22 +17,29 @@ public class Program
         builder.Services.Configure<DownloadSettings>(builder.Configuration.GetRequiredSection("Download"));
         builder.Services.Configure<OutputSettings>(builder.Configuration.GetRequiredSection("Playlists"));
 
-        builder.Services.AddHttpClient();
+        builder.Services.AddHttpClient(
+            nameof(UpdatePlaylistJob),
+            client =>
+            {
+                client.Timeout = TimeSpan.FromMinutes(5);
+                client.MaxResponseContentBufferSize = 256 * 1024 * 1024;
+                client.DefaultRequestHeaders.Clear();
+            })
+            .SetHandlerLifetime(TimeSpan.FromMinutes(5));
 
         builder.Services.AddCronJob<UpdatePlaylistJob>(serviceProvider => serviceProvider.GetRequiredService<IOptions<DownloadSettings>>().Value.Cron);
 
         var app = builder.Build();
 
         // Before starting web app, retrieve and initialize playlist(s)
-
         var job = app.Services.GetRequiredService<UpdatePlaylistJob>();
-        await job.RunAsync();
+        await job.RunAsync(app.Lifetime.ApplicationStopping);
 
         // Configure the HTTP request pipeline.
 
         app.UseAuthorization();
 
-        app.MapGet("/playlist{num:int}.m3u", ([FromRoute]int num) =>
+        app.MapGet("/playlist{num:int}.m3u", ([FromRoute] int num) =>
         {
             var path = $"/tmp/playlist{num}.m3u";
             if (!File.Exists(path))
