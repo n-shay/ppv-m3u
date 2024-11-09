@@ -65,10 +65,18 @@ public class UpdatePlaylistJob(ILogger<UpdatePlaylistJob> logger, IOptions<Downl
             foreach (var playlistSettings in this.outputSettings)
             {
                 var playlist = new Document();
+                var channelNumber = playlistSettings.StartingChannelNumber ?? 0;
 
                 foreach (var channel in originPlaylist.Channels.Where(c => c.GroupTitle == playlistSettings.Group)
                     .Take(playlistSettings.ChannelLimit))
                 {
+                    if (playlistSettings.StartingChannelNumber != null)
+                    {
+                        channel.ChannelId = channelNumber.ToString();
+                        channel.TvgChannelNumber = channelNumber;
+                        channelNumber++;
+                    }
+
                     playlist.Channels.Add(channel);
                 }
 
