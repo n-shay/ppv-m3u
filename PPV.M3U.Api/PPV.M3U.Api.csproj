@@ -8,6 +8,10 @@
     <ContainerRepository>ppv-m3u</ContainerRepository>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Digital5HP.Core" Version="1.1.0" />
     <PackageReference Include="Digital5HP.CronJobs" Version="1.0.1" />
